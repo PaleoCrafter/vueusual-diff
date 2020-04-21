@@ -1,19 +1,12 @@
 {
   "name": "vuesual-diff",
-  "version": "1.0.0",
-  "main": "vuesual-diff.common.js",
+  "version": "1.0.1",
+  "main": "./dist/vuesual-diff.common.js",
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build --target lib --name vuesual-diff src/main.js && rm dist/demo.html && yarn run build:prepare-publish",
-    "build:prepare-publish": "cp -rf package.json dist && cp -rf README.md dist && yarn run build:copy-licenses",
-    "build:copy-licenses": "mkdir dist/licenses && cp -rf src/linear-diff/LICENSE dist/licenses/linear-diff && cp -rf src/tree-diff/LICENSE dist/licenses/tree-diff",
-    "distribute": "yarn build && cd dist && yarn publish",
+    "build": "vue-cli-service build --target lib --name vuesual-diff src/main.js && rm dist/demo.html",
     "lint": "vue-cli-service lint",
     "test:unit": "vue-cli-service test:unit"
-  },
-  "dependencies": {
-    "core-js": "^3.6.4",
-    "vue": "^2.6.11"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.3.0",
@@ -62,5 +55,15 @@
   ],
   "jest": {
     "preset": "@vue/cli-plugin-unit-jest"
-  }
+  },
+  "files": [
+    "dist/*",
+    "docs/*",
+    "src/*",
+    "*.json",
+    "*.js",
+    "*.lock",
+    "LICENSE",
+    "*.md"
+  ]
 }
