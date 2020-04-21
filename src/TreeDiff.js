@@ -1,5 +1,5 @@
-import { Differ, Tree, TreeNode } from '@/tree-diff'
-import LinearDiff from '@/LinearDiff.js'
+import { Differ, Tree, TreeNode } from './tree-diff'
+import LinearDiff from './LinearDiff'
 
 class DomTreeNode extends TreeNode {
   isEqual (otherNode) {

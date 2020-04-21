@@ -1,4 +1,4 @@
-import DiffMatchPatch from '@/linear-diff'
+import DiffMatchPatch from './linear-diff'
 
 export default class LinearDiffer extends DiffMatchPatch {
   indexOf (haystack, needle) {

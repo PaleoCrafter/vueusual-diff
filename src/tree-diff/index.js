@@ -1,6 +1,6 @@
-import TreeNode from '@/tree-diff/TreeNode'
-import Tree from '@/tree-diff/Tree'
-import Differ from '@/tree-diff/Differ'
+import TreeNode from './TreeNode'
+import Tree from './Tree'
+import Differ from './Differ'
 
 export {
   Differ, Tree, TreeNode

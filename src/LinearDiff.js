@@ -1,5 +1,5 @@
-import { DIFF_EQUAL, DIFF_INSERT } from '@/linear-diff/DiffMatchPatch'
-import LinearDiffer from '@/LinearDiffer'
+import { DIFF_EQUAL, DIFF_INSERT } from './linear-diff'
+import LinearDiffer from './LinearDiffer'
 
 const decorationsMatch = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b)
 
