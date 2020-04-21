@@ -1,7 +1,7 @@
 # vuesual-diff
 <a href="https://www.npmjs.com/package/vuesual-diff"><img src="https://img.shields.io/npm/v/vuesual-diff.svg?sanitize=true" alt="Version"></a> <a href="https://www.npmjs.com/package/vuesual-diff"><img src="https://img.shields.io/npm/l/vuesual-diff.svg?sanitize=true" alt="License"></a>  
 
-A pair of Vue.js components for generating (visual) diffs of DOM trees akin to [MediaWiki`s VisualEditor](https://www.mediawiki.org/wiki/VisualEditor/Diffs).  
+A pair of Vue.js components for generating (visual) diffs of DOM trees akin to [MediaWiki's VisualEditor](https://www.mediawiki.org/wiki/VisualEditor/Diffs).  
 
 ## Components
 There are two components included in this package, one for performing diffs of entire DOM trees  
@@ -23,9 +23,8 @@ using equality of the raw HTML. Any changes of such "linear" content occurring w
 
 > ⚠️ **Note on `blockTags`** ⚠️
 > 
-> The type of list items (`li`) is dynamically determined based on whether they contain sublists (child `ol` or `ul` tags).
-> If they contain a sublist, they are always treated as block tag, while all their (direct) linear content is wrapped in `span` tags.
-> If a list item does not contain any sublists, it is is treated as linear.
+> List items (`li`) are always treated as blocks. They direct linear content is wrapped in `span` tags, while any
+> sublists (nested `ul` or `ol` tags) are kept as normal block children.
 
 #### Slots
 The diff is calculated asynchronously whenever any of the props change. During the calculation, a placeholder text is displayed.
@@ -71,3 +70,59 @@ The following is a list of classes and their purpose.
 | `vuesual-diff--placeholder` | Used by either component while its diff is being calculated. This includes `LinearDiff` nodes nested within `TreeDiff`.                                    |
 | `vuesual-diff__inserted`    | Used by both components to mark insertions. For insertions into a tree, only the "highest" node in a subtree not yet present in the old content is marked. |
 | `vuesual-diff__deleted`     | Used by both components to mark deletions. For deletions from a tree, only the "highest" node in a subtree previously in the old content is marked.        |
+
+## Example
+As an example, consider the following pieces of markups:
+
+**Left**
+```html
+<p>A <a href="#">world (the target of this link changes)</a> is on a planet. There are different types of planets. There are several types of planets in this solar system:</p>
+<ul>
+  <li>Terrestrial Planets</li>
+  <li>four giant planets</li>
+</ul>
+<blockquote>Some more details about planets should go here.</blockquote>
+<p>These are the planets in this solar system:</p>
+```
+
+**Right**
+```html
+<p>A <a href="https://google.com">world (the target of this link changes)</a> is on a planet. There are different types of planets.
+The planets in a <a href="#">solar system</a> go around a star, or a <i>sun</i>. There are some planets in this solar system:</p>
+<ul>
+  <li>four terrestrial planets</li>
+  <li>four giant planets
+    <ul>
+      <li>two gas giants</li>
+      <li>ice giants</li>
+    </ul>
+  </li>
+</ul>
+<p>There are other sizes of planets that are not present in our solar system, such as mesoplanets, mini-neptunes, brown dwarfs, super-Earths, super-Jupiters, and sub-Earths.</p>
+<p>These are the planets in this solar system:</p>
+```
+
+**Textual HTML Diff**
+```diff
+-<p>A <a href="#">world (the target of this link changes)</a> is on a planet. There are different types of planets. There are several types of planets in this solar system:</p>
++<p>A <a href="https://google.com">world (the target of this link changes)</a> is on a planet. There are different types of planets.
++The planets in a <a href="#">solar system</a> go around a star, or a <i>sun</i>. There are some planets in this solar system:</p>
+ <ul>
+-  <li>Terrestrial Planets</li>
+-  <li>four giant planets</li>
++  <li>four terrestrial planets</li>
++  <li>four giant planets
++    <ul>
++      <li>two gas giants</li>
++      <li>ice giants</li>
++    </ul>
++  </li>
+ </ul>
+-<blockquote>Some more details about planets should go here.</blockquote>
++<p>There are other sizes of planets that are not present in our solar system, such as mesoplanets, mini-neptunes, brown dwarfs, super-Earths, super-Jupiters, and sub-Earths.</p>
+ <p>These are the planets in this solar system:</p>
+```
+
+This results in the following diff to be rendered:
+
+![Diff Example](docs/example.png)

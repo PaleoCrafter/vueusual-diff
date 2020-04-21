@@ -103,7 +103,15 @@ export default {
 
         const content = []
         node.childNodes.forEach((child) => {
-          content.push(...linearize(child, [...decorations, { tag: node.nodeName, attrs: JSON.parse(JSON.stringify(node.attributes)) }]))
+          const attrs = {}
+          const attributes = node.attributes
+          if (attributes !== undefined) {
+            for (let i = 0; i < attributes.length; i++) {
+              attrs[attributes[i].name] = attributes[i].value
+            }
+          }
+
+          content.push(...linearize(child, [...decorations, { tag: node.nodeName, attrs }]))
         })
         return content
       }

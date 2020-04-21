@@ -4,7 +4,7 @@ import LinearDiff from '@/LinearDiff.js'
 class DomTreeNode extends TreeNode {
   isEqual (otherNode) {
     if (this.node.inline) {
-      return otherNode.node.inline && otherNode.node.tag === this.node.tag && this.node.content === otherNode.node.content
+      return otherNode.node.inline && otherNode.node.tag === this.node.tag && otherNode.node.content === this.node.content
     }
 
     return otherNode.node.tag === this.node.tag
@@ -71,7 +71,11 @@ export default {
       )
     }
 
-    function renderNode (node, classList) {
+    const renderNode = (node, classList) => {
+      if (node.hide) {
+        return []
+      }
+
       if (node.inline) {
         const tag = node.tag === '#text' ? 'span' : node.tag
 
@@ -161,14 +165,30 @@ export default {
 
       transactions.reverse().forEach(([lhsIndex, rhsIndex]) => {
         if (lhsIndex === null && rhsIndex !== null) {
-          newTree.orderedNodes[rhsIndex].node.inserted = true
+          const newNode = newTree.orderedNodes[rhsIndex]
+
+          if (correspondingNodes.newToOld[newNode.parent.index] !== undefined) {
+            newNode.node.inserted = true
+          }
         } else if (lhsIndex !== null && rhsIndex === null) {
-          const { node: lhs, parent: lastCommonAncestor } = oldTree.orderedNodes[lhsIndex]
+          const oldNode = oldTree.orderedNodes[lhsIndex]
+          const { node: lhs, parent: lastCommonAncestor } = oldNode
           lhs.deleted = true
           const correspondingAncestorIndex = correspondingNodes.oldToNew[lastCommonAncestor.index]
           if (correspondingAncestorIndex === undefined) {
             return
           }
+
+          // Hide nested nodes that were moved out of this one rather than removed
+          const hideChanged = (node) => {
+            if (correspondingNodes.oldToNew[node.index] !== undefined) {
+              node.node.hide = true
+            }
+
+            node.children.forEach(hideChanged)
+          }
+
+          hideChanged(oldNode)
 
           let previousNodeIndex
           const siblingNodes = lastCommonAncestor.children
@@ -189,7 +209,7 @@ export default {
             const insertIndex = correspondingAncestor.children.filter(child => child.index <= previousNode.index).length
             correspondingAncestor.node.children.splice(insertIndex, 0, lhs)
           } else {
-            correspondingAncestor.node.children.unshift(lhs)
+            this.prependNode(correspondingAncestor.node, lhs)
           }
         } else if (lhsIndex !== null && rhsIndex !== null) {
           const lhs = oldTree.orderedNodes[lhsIndex].node
@@ -206,10 +226,21 @@ export default {
 
       this.diff = newTree.root.node
     },
+    prependNode (parent, node) {
+      if (!parent.inline) {
+        parent.children.unshift(node)
+      } else {
+        const contentNode = { ...parent }
+        contentNode.tag = 'SPAN'
+        parent.inline = false
+        parent.children = [node, contentNode]
+        delete parent.content
+      }
+    },
     buildTree (root) {
       const self = this
 
-      function transformNode (node, parent) {
+      function transformNode (node) {
         if (node.nodeType === Node.COMMENT_NODE) {
           return []
         }
@@ -222,11 +253,10 @@ export default {
           const childLists = node.querySelectorAll('ul, ol')
 
           if (childLists.length === 0) {
-            return [{ parent, tag: node.nodeName, inline: true, content: node.innerHTML }]
+            return [{ tag: node.nodeName, children: [{ tag: 'SPAN', inline: true, content: node.innerHTML.trim() }] }]
           }
 
           const children = []
-          const transformedNode = { parent, tag: 'LI', children }
           let lastList = null
           childLists.forEach((list) => {
             if (list.parentNode !== node) {
@@ -243,10 +273,10 @@ export default {
             }
 
             if (span.childNodes.length > 0) {
-              children.push(...transformNode(span, transformedNode))
+              children.push(...transformNode(span))
             }
 
-            children.push(...transformNode(list, transformedNode))
+            children.push(...transformNode(list))
             lastList = list
           })
 
@@ -258,24 +288,17 @@ export default {
             element = nextElement
           }
           if (span.childNodes.length > 0) {
-            children.push(...transformNode(span, transformedNode))
+            children.push(...transformNode(span))
           }
 
-          return [transformedNode]
+          return [{ tag: 'LI', children }]
         }
 
         if (!self.blockTags.includes(node.nodeName.toLowerCase())) {
-          return [{ parent, tag: node.nodeName, inline: true, content: node.innerHTML || node.textContent }]
+          return [{ tag: node.nodeName, inline: true, content: (node.innerHTML || node.textContent).trim() }]
         }
 
-        const children = []
-        const transformedNode = { parent, tag: node.nodeName, children }
-
-        node.childNodes.forEach((child) => {
-          children.push(...transformNode(child, parent))
-        })
-
-        return [transformedNode]
+        return [{ tag: node.nodeName, children: Array.from(node.childNodes).flatMap(transformNode) }]
       }
 
       return transformNode(root)[0]
