@@ -50,6 +50,7 @@
  * The following methods have been added:
  * - matchChar
  * - matchString
+ * - indexOf
  *
  * @author Marvin Rösch
  * https://github.com/PaleoCrafter/vuesueal-diff
@@ -101,6 +102,16 @@ var DIFF_EQUAL = 0;
 
 /** @typedef {{0: number, 1: string}} */
 diff_match_patch.Diff;
+
+diff_match_patch.prototype.indexOfFrom = function (haystack, needle, startIndex) {
+  const slicedIndex = this.indexOf(haystack.slice(startIndex), needle);
+
+  return slicedIndex === -1 ? -1 : startIndex + slicedIndex;
+};
+
+diff_match_patch.prototype.indexOf = function (haystack, needle) {
+  return haystack.indexOf(needle);
+};
 
 diff_match_patch.prototype.isEqualChar = function (a, b) {
   return a === b;
@@ -239,7 +250,7 @@ diff_match_patch.prototype.diff_compute_ = function(text1, text2, checklines,
 
   var longtext = text1.length > text2.length ? text1 : text2;
   var shorttext = text1.length > text2.length ? text2 : text1;
-  var i = longtext.indexOf(shorttext);
+  var i = this.indexOf(longtext, shorttext);
   if (i !== -1) {
     // Shorter text is inside the longer text (speedup).
     diffs = [[DIFF_INSERT, longtext.slice(0, i)],
@@ -691,7 +702,7 @@ diff_match_patch.prototype.diff_commonOverlap_ = function(text1, text2) {
   var length = 1;
   while (true) {
     var pattern = text1.slice(text_length - length);
-    var found = text2.indexOf(pattern);
+    var found = this.indexOf(text2, pattern);
     if (found === -1) {
       return best;
     }
@@ -749,7 +760,8 @@ diff_match_patch.prototype.diff_halfMatch_ = function(text1, text2) {
     var j = -1;
     var best_common = dmp.getEmptyString();
     var best_longtext_a, best_longtext_b, best_shorttext_a, best_shorttext_b;
-    while ((j = shorttext.indexOf(seed, j + 1)) !== -1) {
+
+    while ((j = this.indexOfFrom(shorttext, seed, j + 1)) !== -1) {
       var prefixLength = dmp.diff_commonPrefix(longtext.slice(i),
         shorttext.slice(j));
       var suffixLength = dmp.diff_commonSuffix(longtext.slice(0, i),
