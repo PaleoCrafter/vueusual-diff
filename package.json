@@ -1,6 +1,6 @@
 {
   "name": "vuesual-diff",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/vuesual-diff.common.js",
   "module": "dist/vuesual-diff.esm.js",
   "unpkg": "dist/vuesual-diff.js",
