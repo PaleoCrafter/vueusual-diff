@@ -6,12 +6,10 @@ class DomTreeNode extends TreeNode {
     if (this.node.inline) {
       return otherNode.node.inline &&
         otherNode.node.tag === this.node.tag &&
-        otherNode.node.content === this.node.content &&
-        JSON.stringify(otherNode.node.attrs) === JSON.stringify(this.node.attrs)
+        otherNode.node.content === this.node.content
     }
 
-    return otherNode.node.tag === this.node.tag &&
-      JSON.stringify(otherNode.node.attrs) === JSON.stringify(this.node.attrs)
+    return otherNode.node.tag === this.node.tag
   }
 
   getOriginalNodeChildren () {
@@ -46,7 +44,8 @@ export default {
   },
   data () {
     return {
-      diff: null
+      diff: null,
+      totalDiff: null
     }
   },
   watch: {
@@ -75,6 +74,17 @@ export default {
       )
     }
 
+    if (this.totalDiff !== null) {
+      return h(
+        this.tag,
+        {
+          class: ['vuesual-diff', 'vuesual-diff--tree', `vuesual-diff__${this.totalDiff}`],
+          domProps: { innerHTML: this.diff }
+        },
+        []
+      )
+    }
+
     const renderNode = (node, classList) => {
       if (node.hide) {
         return []
@@ -88,9 +98,9 @@ export default {
             h(
               LinearDiff,
               {
-                class: [...classList, 'vuesual-diff__sub-diff'],
+                class: [...classList, 'vuesual-diff__sub-diff', node.attrs.class].filter(cls => cls !== undefined),
                 attrs: node.attrs,
-                props: { tag: tag, old: node.oldContent, new: node.content }
+                props: { tag, old: node.oldContent, new: node.content }
               },
               [
                 this.$slots.linearPlaceholder
@@ -105,7 +115,7 @@ export default {
             h(
               tag,
               {
-                class: [...classList, 'vuesual-diff__inserted'],
+                class: [...classList, 'vuesual-diff__inserted', node.attrs.class].filter(cls => cls !== undefined),
                 attrs: node.attrs,
                 domProps: { innerHTML: node.content }
               }
@@ -120,8 +130,9 @@ export default {
               class: [
                 ...classList,
                 ...(node.inserted ? ['vuesual-diff__inserted'] : []),
-                ...(node.deleted ? ['vuesual-diff__deleted'] : [])
-              ],
+                ...(node.deleted ? ['vuesual-diff__deleted'] : []),
+                node.attrs.class
+              ].filter(cls => cls !== undefined),
               attrs: node.attrs,
               domProps: { innerHTML: node.content }
             }
@@ -134,7 +145,10 @@ export default {
       if (node.changed && node.replaces) {
         return [
           ...renderNode(node.replaces, [...classList, 'vuesual-diff__deleted']),
-          h(node.tag, { class: [...classList, 'vuesual-diff__inserted'], attrs: node.attrs }, renderedChilds)
+          h(node.tag, {
+            class: [...classList, 'vuesual-diff__inserted', node.attrs.class].filter(cls => cls !== undefined),
+            attrs: node.attrs
+          }, renderedChilds)
         ]
       }
 
@@ -145,8 +159,9 @@ export default {
             class: [
               ...classList,
               ...(node.inserted ? ['vuesual-diff__inserted'] : []),
-              ...(node.deleted ? ['vuesual-diff__deleted'] : [])
-            ],
+              ...(node.deleted ? ['vuesual-diff__deleted'] : []),
+              node.attrs.class
+            ].filter(cls => cls !== undefined),
             attrs: node.attrs
           },
           renderedChilds
@@ -157,7 +172,22 @@ export default {
     return h(this.tag, { class: ['vuesual-diff', 'vuesual-diff--tree'] }, this.diff.children.flatMap(child => renderNode(child, [])))
   },
   methods: {
+    // eslint-disable-next-line require-await
     async updateDiff () {
+      if (this.old === '' && this.new !== '') {
+        this.diff = this.new
+        this.totalDiff = 'inserted'
+        return
+      }
+
+      if (this.old !== '' && this.new === '') {
+        this.diff = this.old
+        this.totalDiff = 'deleted'
+        return
+      }
+
+      this.totalDiff = null
+
       const oldElement = document.createElement(this.tag)
       oldElement.innerHTML = this.old
       const newElement = document.createElement(this.tag)
@@ -178,7 +208,7 @@ export default {
         if (lhsIndex === null && rhsIndex !== null) {
           const newNode = newTree.orderedNodes[rhsIndex]
 
-          if (newNode.parent !== undefined && correspondingNodes.newToOld[newNode.parent.index] !== undefined) {
+          if (newNode.parent === undefined || correspondingNodes.newToOld[newNode.parent.index] !== undefined) {
             newNode.node.inserted = true
           }
         } else if (lhsIndex !== null && rhsIndex === null) {
