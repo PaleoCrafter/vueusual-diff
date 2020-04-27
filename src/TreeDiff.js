@@ -167,7 +167,7 @@ export default {
         if (lhsIndex === null && rhsIndex !== null) {
           const newNode = newTree.orderedNodes[rhsIndex]
 
-          if (correspondingNodes.newToOld[newNode.parent.index] !== undefined) {
+          if (newNode.parent !== undefined && correspondingNodes.newToOld[newNode.parent.index] !== undefined) {
             newNode.node.inserted = true
           }
         } else if (lhsIndex !== null && rhsIndex === null) {
