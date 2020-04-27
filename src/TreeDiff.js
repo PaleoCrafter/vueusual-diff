@@ -4,10 +4,14 @@ import LinearDiff from './LinearDiff'
 class DomTreeNode extends TreeNode {
   isEqual (otherNode) {
     if (this.node.inline) {
-      return otherNode.node.inline && otherNode.node.tag === this.node.tag && otherNode.node.content === this.node.content
+      return otherNode.node.inline &&
+        otherNode.node.tag === this.node.tag &&
+        otherNode.node.content === this.node.content &&
+        JSON.stringify(otherNode.node.attrs) === JSON.stringify(this.node.attrs)
     }
 
-    return otherNode.node.tag === this.node.tag
+    return otherNode.node.tag === this.node.tag &&
+      JSON.stringify(otherNode.node.attrs) === JSON.stringify(this.node.attrs)
   }
 
   getOriginalNodeChildren () {
@@ -83,7 +87,11 @@ export default {
           return [
             h(
               LinearDiff,
-              { class: [...classList, 'vuesual-diff__sub-diff'], props: { tag: tag, old: node.oldContent, new: node.content } },
+              {
+                class: [...classList, 'vuesual-diff__sub-diff'],
+                attrs: node.attrs,
+                props: { tag: tag, old: node.oldContent, new: node.content }
+              },
               [
                 this.$slots.linearPlaceholder
                   ? h('template', { slot: 'placeholder' }, [this.$slots.linearPlaceholder])
@@ -98,6 +106,7 @@ export default {
               tag,
               {
                 class: [...classList, 'vuesual-diff__inserted'],
+                attrs: node.attrs,
                 domProps: { innerHTML: node.content }
               }
             )
@@ -113,6 +122,7 @@ export default {
                 ...(node.inserted ? ['vuesual-diff__inserted'] : []),
                 ...(node.deleted ? ['vuesual-diff__deleted'] : [])
               ],
+              attrs: node.attrs,
               domProps: { innerHTML: node.content }
             }
           )
@@ -124,7 +134,7 @@ export default {
       if (node.changed && node.replaces) {
         return [
           ...renderNode(node.replaces, [...classList, 'vuesual-diff__deleted']),
-          h(node.tag, { class: [...classList, 'vuesual-diff__inserted'] }, renderedChilds)
+          h(node.tag, { class: [...classList, 'vuesual-diff__inserted'], attrs: node.attrs }, renderedChilds)
         ]
       }
 
@@ -136,7 +146,8 @@ export default {
               ...classList,
               ...(node.inserted ? ['vuesual-diff__inserted'] : []),
               ...(node.deleted ? ['vuesual-diff__deleted'] : [])
-            ]
+            ],
+            attrs: node.attrs
           },
           renderedChilds
         )
@@ -216,7 +227,7 @@ export default {
           const rhs = newTree.orderedNodes[rhsIndex].node
           rhs.changed = true
 
-          if (lhs.tag === rhs.tag && lhs.inline && rhs.inline) {
+          if (lhs.tag === rhs.tag && lhs.inline && rhs.inline && JSON.stringify(lhs.attrs) === JSON.stringify(rhs.attrs)) {
             rhs.oldContent = lhs.content
           } else {
             rhs.replaces = lhs
@@ -249,11 +260,23 @@ export default {
           return []
         }
 
+        if (node.nodeType === Node.TEXT_NODE) {
+          return [{ tag: node.nodeName, inline: true, content: node.textContent.trim(), attrs: {} }]
+        }
+
+        const attrs = {}
+        const attributes = node.attributes
+        if (attributes !== undefined) {
+          for (let i = 0; i < attributes.length; i++) {
+            attrs[attributes[i].name] = attributes[i].value
+          }
+        }
+
         if (node.nodeName === 'LI') {
           const childLists = node.querySelectorAll('ul, ol')
 
           if (childLists.length === 0) {
-            return [{ tag: node.nodeName, children: [{ tag: 'SPAN', inline: true, content: node.innerHTML.trim() }] }]
+            return [{ tag: node.nodeName, children: [{ tag: 'SPAN', inline: true, content: node.innerHTML.trim() }], attrs }]
           }
 
           const children = []
@@ -291,14 +314,14 @@ export default {
             children.push(...transformNode(span))
           }
 
-          return [{ tag: 'LI', children }]
+          return [{ tag: 'LI', children, attrs }]
         }
 
         if (!self.blockTags.includes(node.nodeName.toLowerCase())) {
-          return [{ tag: node.nodeName, inline: true, content: (node.innerHTML || node.textContent).trim() }]
+          return [{ tag: node.nodeName, inline: true, content: (node.innerHTML || node.textContent).trim(), attrs }]
         }
 
-        return [{ tag: node.nodeName, children: Array.from(node.childNodes).flatMap(transformNode) }]
+        return [{ tag: node.nodeName, children: Array.from(node.childNodes).flatMap(transformNode), attrs }]
       }
 
       return transformNode(root)[0]
